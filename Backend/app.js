@@ -6,14 +6,10 @@ const mongoose = require("mongoose");
 const needle = require("needle");
 app.use(express.json());
 const cors = require("cors");
-app.use(cors(
-  
-));
+app.use(cors());
 const bcrypt = require("bcryptjs");
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: false }));
-
-
 
 const jwt = require("jsonwebtoken");
 var nodemailer = require("nodemailer");
@@ -24,10 +20,10 @@ const mongoUrl = "mongodb+srv://dbuser:1234@cluster0.sq9rrxz.mongodb.net/test";
 
 const bearerToken =
   "AAAAAAAAAAAAAAAAAAAAADjylAEAAAAAm3Et7T%2F2fJfd1biJoQTO1bkgLnk%3DrSlBZvRUlnC1LjmhQxfxE5XAGfTV4BfgpxjfhRqO1xCtnc5aog";
-  const LINKEDIN_CLIENT_ID = "774pwec0qf8bfq";
-  const LINKEDIN_CLIENT_SECRET = "UeOe2d8CSJMjfUlB";
-  const LINKEDIN_REDIRECT_URI = "http://localhost:3000/linkedin";
-  
+const LINKEDIN_CLIENT_ID = "774pwec0qf8bfq";
+const LINKEDIN_CLIENT_SECRET = "UeOe2d8CSJMjfUlB";
+const LINKEDIN_REDIRECT_URI = "http://localhost:3000/linkedin";
+
 mongoose
   .connect(mongoUrl, {
     useNewUrlParser: true,
@@ -42,16 +38,12 @@ require("./userDetails");
 const User = mongoose.model("UserInfo");
 const Admin = mongoose.model("AdminInfo");
 
-
-
-
-
 app.post("/register", async (req, res) => {
-  const { name, email, type, password } = req.body;
+  const { name, email, password } = req.body;
 
   const encryptedPassword = await bcrypt.hash(password, 10);
   try {
-    if (!(name && email && password && type)) {
+    if (!(name && email && password)) {
       return res.send({ error: "All inputs are Required" });
     }
 
@@ -63,9 +55,8 @@ app.post("/register", async (req, res) => {
     await User.create({
       name,
       email,
-      type,
+
       password: encryptedPassword,
-      
     });
     res.send({ status: "ok" });
   } catch (error) {
@@ -82,8 +73,8 @@ app.post("/id", async (req, res) => {
     }
     console.log(twitid, linkid, emi);
     const filter = { email: emi };
-const update = { twitid: twitid,linkid:linkid };
-   await User.findOneAndUpdate(filter, update);
+    const update = { twitid: twitid, linkid: linkid };
+    await User.findOneAndUpdate(filter, update);
     res.send({ status: "ok" });
   } catch (error) {
     res.send({ status: "Some error" });
@@ -117,56 +108,54 @@ app.post("/credii", async (req, res) => {
 });
 
 app.post("/addit", async (req, res) => {
-  const {  namee,mail,tweetid,linkedid,from} = req.body;
+  const { namee, mail, tweetid, linkedid, from } = req.body;
 
   try {
-    
     console.log(mail);
     console.log(from);
     const filter = { email: from };
-;
-   await User.updateOne(filter,{ $push: { arri: [namee,mail,tweetid,linkedid] } });
-   
+    await User.updateOne(filter, {
+      $push: { arri: [namee, mail, tweetid, linkedid] },
+    });
+
     res.send({ status: "ok" });
   } catch (error) {
     res.send({ status: "Some error" });
   }
 });
 app.post("/delit", async (req, res) => {
-  const { namee,mail,tweetid,linkedid,from} = req.body;
+  const { namee, mail, tweetid, linkedid, from } = req.body;
 
   try {
-    
     console.log(mail);
     console.log(from);
     const filter = { email: from };
-;
-   await User.updateOne(filter,{ $pull: { arri: [namee,mail,tweetid,linkedid] } });
-   
+    await User.updateOne(filter, {
+      $pull: { arri: [namee, mail, tweetid, linkedid] },
+    });
+
     res.send({ status: "ok" });
   } catch (error) {
     res.send({ status: "Some error" });
   }
 });
 
+app.post("/twitty", async (req, res) => {
+  const { userId } = req.body;
+  const url = `https://api.twitter.com/2/users/${userId}/tweets`;
 
-app.post("/twitty",async (req, res) => {
-  
-  const {userId} = req.body;
-const url = `https://api.twitter.com/2/users/${userId}/tweets`;
-
-// The code below sets the bearer token from your environment variables
-// To set environment variables on macOS or Linux, run the export command below from the terminal:
-// export BEARER_TOKEN='YOUR-TOKEN'
+  // The code below sets the bearer token from your environment variables
+  // To set environment variables on macOS or Linux, run the export command below from the terminal:
+  // export BEARER_TOKEN='YOUR-TOKEN'
 
   const getPage = async (params, options, nextToken) => {
     if (nextToken) {
       params.pagination_token = nextToken;
     }
-  
+
     try {
       const resp = await needle("get", url, params, options);
-  
+
       if (resp.statusCode != 200) {
         console.log(`${resp.statusCode} ${resp.statusMessage}:\n${resp.body}`);
         return;
@@ -177,29 +166,27 @@ const url = `https://api.twitter.com/2/users/${userId}/tweets`;
     }
   };
   try {
-    
     let userTweets = [];
 
-  // we request the author_id expansion so that we can print out the user name later
-  let params = {
-    max_results: 100,
-    "tweet.fields": "created_at",
-    expansions: "author_id",
-  };
+    // we request the author_id expansion so that we can print out the user name later
+    let params = {
+      max_results: 100,
+      "tweet.fields": "created_at",
+      expansions: "author_id",
+    };
 
-  const options = {
-    headers: {
-      "User-Agent": "v2UserTweetsJS",
-      authorization: `Bearer ${bearerToken}`,
-    },
-  };
+    const options = {
+      headers: {
+        "User-Agent": "v2UserTweetsJS",
+        authorization: `Bearer ${bearerToken}`,
+      },
+    };
 
-  let hasNextPage = true;
-  let nextToken = null;
-  let userName;
-  console.log("Retrieving Tweets...");
+    let hasNextPage = true;
+    let nextToken = null;
+    let userName;
+    console.log("Retrieving Tweets...");
 
-  
     let resp = await getPage(params, options, nextToken);
     if (
       resp &&
@@ -219,13 +206,18 @@ const url = `https://api.twitter.com/2/users/${userId}/tweets`;
     } else {
       hasNextPage = false;
     }
-  
 
-    return res.send({ status: "ok" ,data:userTweets,len:userTweets.length,name:userName,id:userId});
+    return res.send({
+      status: "ok",
+      data: userTweets,
+      len: userTweets.length,
+      name: userName,
+      id: userId,
+    });
   } catch (error) {
     return res.send({ status: "Some error" });
   }
-})
+});
 app.post("/admin-register", async (req, res) => {
   const { name, email, type, password } = req.body;
 
@@ -245,9 +237,8 @@ app.post("/admin-register", async (req, res) => {
       email,
       type,
       password: encryptedPassword,
-      linkid:"",
-      twitid:"",
-
+      linkid: "",
+      twitid: "",
     });
     res.send({ status: "ok" });
   } catch (error) {
@@ -337,34 +328,25 @@ app.post("/userData", async (req, res) => {
   } catch (error) {}
 });
 
-
 app.post("/useraccount", async (req, res) => {
-  
   try {
-   
     // const arr=User.getUsers();
     // const data=[];
     // arr.forEach(o => data.push(o.name));
     User.find({})
-    .then((data) => {
-      console.log(data)
-      res.send({ status: "ok", data: data });
-    })
-    .catch((error) => {
-      res.send({ status: "error", data: error });
-    });
-      
-      
+      .then((data) => {
+        console.log(data);
+        res.send({ status: "ok", data: data });
+      })
+      .catch((error) => {
+        res.send({ status: "error", data: error });
+      });
   } catch (error) {}
 });
 
 app.post("/connaccount", async (req, res) => {
-  
   const { from } = req.body;
   try {
-    
-
- 
     User.findOne({ email: from })
       .then((data) => {
         res.send({ status: "ok", data: data.arri });
@@ -373,16 +355,11 @@ app.post("/connaccount", async (req, res) => {
         res.send({ status: "error", data: error });
       });
   } catch (error) {}
-  
 });
 
 app.post("/infor", async (req, res) => {
-  
   const { mail } = req.body;
   try {
-    
-
- 
     User.findOne({ email: mail })
       .then((data) => {
         res.send({ status: "ok", data: data });
@@ -391,12 +368,10 @@ app.post("/infor", async (req, res) => {
         res.send({ status: "error", data: error });
       });
   } catch (error) {}
-  
 });
-app.post('/connert', (req, res) => {
+app.post("/connert", (req, res) => {
   const { from } = req.body;
 
- 
   try {
     const LI_ACCESS_TOKEN_EXCHANGE_URL =
       "https://www.linkedin.com/oauth/v2/accessToken";
@@ -418,9 +393,8 @@ app.post('/connert', (req, res) => {
     })
       .then((result) => {
         console.log(result.data);
-       
-          res.send({ status: "ok", data: result.data.access_token });
-        
+
+        res.send({ status: "ok", data: result.data.access_token });
       })
       .catch((error) => {
         console.log(error);
@@ -431,12 +405,11 @@ app.post('/connert', (req, res) => {
   }
 });
 
+app.post("/coneeeeee", (req, res) => {
+  const { from } = req.body;
 
-app.post('/coneeeeee', (req, res) => {
-    const { from } = req.body;
-  
   try {
-    console.log(from)
+    console.log(from);
     const LI_PROFILE_API_ENDPOINT = "https://api.linkedin.com/v2/me";
     axios({
       method: "get",
@@ -462,62 +435,56 @@ app.post('/coneeeeee', (req, res) => {
   }
 });
 
-app.post('/again', (req, res) => {
-    
+app.post("/again", (req, res) => {
   try {
-    const {from,val,texi } = req.body;
-    console.log(from)
-    console.log(val)
-    console.log(texi)
+    const { from, val, texi } = req.body;
+    console.log(from);
+    console.log(val);
+    console.log(texi);
     const LI_PROFILE_API_ENDPOINT = "https://api.linkedin.com/v2/ugcPosts";
     const title = "Title title";
     const text = "Text text";
-    
+
     const headers = {
-        'Authorization': "Bearer " +from,
-        "Access-Control-Allow-Origin": "*",
-        'cache-control': 'no-cache',
-        'X-Restli-Protocol-Version': '2.0.0',
-        "content-type": "text/plain",
-    }
-    axios( {
-      url:LI_PROFILE_API_ENDPOINT,
-        method: "POST",
-        headers: headers,
-        data: {
-       
-          author: "urn:li:person:"+val,
-          lifecycleState: "PUBLISHED",
-          specificContent: {
-              "com.linkedin.ugc.ShareContent": {
-                  "shareCommentary": {
-                      "text": texi
-                  },
-                  "shareMediaCategory": "NONE"
-              }
+      Authorization: "Bearer " + from,
+      "Access-Control-Allow-Origin": "*",
+      "cache-control": "no-cache",
+      "X-Restli-Protocol-Version": "2.0.0",
+      "content-type": "text/plain",
+    };
+    axios({
+      url: LI_PROFILE_API_ENDPOINT,
+      method: "POST",
+      headers: headers,
+      data: {
+        author: "urn:li:person:" + val,
+        lifecycleState: "PUBLISHED",
+        specificContent: {
+          "com.linkedin.ugc.ShareContent": {
+            shareCommentary: {
+              text: texi,
+            },
+            shareMediaCategory: "NONE",
           },
-          visibility: {
-              "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
-          }
-          
+        },
+        visibility: {
+          "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC",
+        },
       },
     })
       .then((result) => {
-        console.log("get "+result);
+        console.log("get " + result);
 
-        res.send({ status: "ok",data:result });
+        res.send({ status: "ok", data: result });
       })
       .catch((error) => {
         console.log(error);
         res.send({ status: "Some error" });
       });
-
-    
   } catch (error) {
     res.send({ status: "Some error" });
   }
 });
-
 
 app.listen(5000, () => {
   console.log("Server Started");
